@@ -24,7 +24,7 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `bamazon_db`.`Products`;
 CREATE TABLE `bamazon_db`.`Products` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `product_name` VARCHAR(100),
+  `product_name` VARCHAR(50) NOT NULL,
   `price` DECIMAL(6,2) NOT NULL,
   `id_departments` INT NOT NULL,
   `inventory` INT NOT NULL,

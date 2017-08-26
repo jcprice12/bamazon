@@ -6,7 +6,7 @@ insert into `Departments` (`department_name`, `overhead_costs`) VALUES
 ("books", 100.00);
 
 insert into `Products` (`product_name`, `price`, `id_departments`, `inventory`) VALUES
-(NULL, 30.00, 1, 100),
+("khakis", 30.00, 1, 100),
 ("shirt", 50.00, 1, 100),
 ("socks", 5.00, 1, 2000),
 ("shoes", 70.00, 1, 10),
