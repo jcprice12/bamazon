@@ -48,7 +48,9 @@ CREATE TABLE `bamazon_db`.`Addresses` (
   `city` VARCHAR(50) NOT NULL,
   `state` VARCHAR(2) NOT NULL,
   `zip` VARCHAR(10) NOT NULL,
-  PRIMARY KEY (`id`))
+  PRIMARY KEY (`id`),
+  CONSTRAINT `unique_address`
+	UNIQUE (`address`, `city`, `state`, `zip`))
 ENGINE = InnoDB;
 
 
@@ -80,6 +82,7 @@ CREATE TABLE `bamazon_db`.`Orders` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `id_products` INT NOT NULL,
   `quantity` INT NOT NULL,
+  `sub_total` DECIMAL (9,2),
   `email_customers` VARCHAR(75) NOT NULL,
   `id_addresses` INT NOT NULL,
   `date_of_order` DATETIME NOT NULL,
