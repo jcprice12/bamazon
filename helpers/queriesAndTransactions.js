@@ -217,6 +217,33 @@ var addStock = function(connection, productId, amount){
     });
 }
 
+var insertProd = function(connection, product){
+    connection.beginTransaction(function(errTrans){
+        if(errTrans){
+            return connection.rollback(function(){
+                throw errTrans;
+            });
+        }
+        connection.query("INSERT INTO `Products` SET ?", product, function(errInsert, insertRes){
+            if(errInsert){
+                return connection.rollback(function(){
+                    throw errInsert;
+                });
+            }
+            connection.commit(function(commitErr){
+                if(commitErr){
+                    return connection.rollback(function(){
+                        throw commitErr;
+                    });
+                }
+                console.log("Product successfully added!");
+                managerApp.startManagerPrompt();
+            });
+        });
+    });
+}
+
+exports.insertProd = insertProd;
 exports.addStock = addStock;
 exports.signUpTransaction = signUpTransaction;
 exports.createOrderAndAddressTransaction = createOrderAndAddressTransaction;

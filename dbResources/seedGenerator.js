@@ -1,4 +1,11 @@
-var connection = require("./../mySQLConnection.js");
+var mysql = require("mysql");
+var connection = mysql.createConnection({
+    host: "localhost",
+    port: 3306,
+    user: "root",
+    password: "root",
+    database: "bamazon_db"
+});
 var password_hash = require("password-hash");
 
 var customersArr = [{

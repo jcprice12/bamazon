@@ -5,20 +5,20 @@ insert into `Departments` (`department_name`, `overhead_costs`) VALUES
 ("video games", 250.00),
 ("books", 100.00);
 
-insert into `Products` (`product_name`, `price`, `id_departments`, `inventory`) VALUES
-("khakis", 30.00, 1, 100),
-("shirt", 50.00, 1, 100),
-("socks", 5.00, 1, 2000),
-("shoes", 70.00, 1, 10),
-("jeans", 50.00, 1, 3),
-("Guild Wars 2", 40.00, 2, 60),
-("Battlefied One", 60.00, 2, 60),
-("Battlefied Two", 60.00, 2, 70),
-("Some Mario Game", 60.00, 2, 3000),
-("Red Dead Redemption 2", 60.00, 2, 4),
-("The Great Gatsby 2", 15.00, 3, 100),
-("Harry Potter 8 (Harry Potter Goes Back to School)", 20.00, 3, 2),
-("Moby Dick 2", 10.00, 3, 200);
+insert into `Products` (`product_name`, `price`, `name_departments`, `inventory`) VALUES
+("khakis", 30.00, "clothing", 100),
+("shirt", 50.00, "clothing", 100),
+("socks", 5.00, "clothing", 2000),
+("shoes", 70.00, "clothing", 10),
+("jeans", 50.00, "clothing", 3),
+("Guild Wars 2", 40.00, "video games", 60),
+("Battlefied One", 60.00, "video games", 60),
+("Battlefied Two", 60.00, "video games", 70),
+("Some Mario Game", 60.00, "video games", 3000),
+("Red Dead Redemption 2", 60.00, "video games", 4),
+("The Great Gatsby 2", 15.00, "books", 100),
+("Harry Potter 8 (Harry Potter Goes Back to School)", 20.00, "books", 2),
+("Moby Dick 2", 10.00, "books", 200);
 
 
 insert into Addresses (address, city, state, zip) values ('45 2nd Place', 'Mobile', 'AL', '36689');

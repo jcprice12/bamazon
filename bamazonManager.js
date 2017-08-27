@@ -48,6 +48,56 @@ var addInv = function(){
     });
 }
 
+var addNewProduct = function(){
+    connection.query("SELECT `department_name` FROM `Departments`", function(selErr, selRes){
+        if(selErr) throw err;
+        if(selRes.length > 0){
+            var depts = [];
+            for(var i = 0; i < selRes.length; i++){
+                depts.push(selRes[i].department_name);
+            }
+            inquirer.prompt([
+                {
+                    type : "input",
+                    message : "Name of Product:",
+                    validate : function(input){
+                        return (input !== "" && input.length <= 50);
+                    },
+                    name : "prodName",
+                },
+                {
+                    type : "input",
+                    message : "Price of Product:",
+                    validate : function(input){
+                        if(!isNaN(input) && ((input * 1) > 0)){
+                            return true;
+                        }
+                        return false;
+                    },
+                    name : "prodPrice",
+                },
+                {
+                    type : "list",
+                    message : "Department",
+                    choices : depts,
+                    name : "deptName",
+                },
+            ]).then(function(inqResp){
+                var myPrice = parseFloat(Math.round(inqResp.prodPrice * 100) / 100).toFixed(2);
+                var prodToInsert = {
+                    product_name : inqResp.prodName,
+                    price : myPrice,
+                    name_departments : inqResp.deptName,
+                    inventory : 0,
+                }
+                queryHelper.insertProd(connection,prodToInsert);
+            });
+        } else {
+            console.log("Cannot add a new product because there are no departments in the Database.");
+        }
+    });
+}
+
 var startManagerPrompt = function(){
     myChoices = [
         "View Products for Sale",
@@ -73,6 +123,9 @@ var startManagerPrompt = function(){
                 break
             case "Add To Inventory":
                 addInv();
+                break
+            case "Add New Product":
+                addNewProduct();
                 break
             case "Exit Application":
                 connection.end();

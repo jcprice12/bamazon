@@ -11,10 +11,9 @@ USE `bamazon_db` ;
 -- -----------------------------------------------------
 DROP TABLE IF EXISTS `bamazon_db`.`Departments`;
 CREATE TABLE `bamazon_db`.`Departments` (
-  `id` INT NOT NULL AUTO_INCREMENT,
   `department_name` VARCHAR(50) NOT NULL,
   `overhead_costs` DECIMAL(6,2) NOT NULL,
-  PRIMARY KEY (`id`))
+  PRIMARY KEY (`department_name`))
 ENGINE = InnoDB;
 
 
@@ -26,13 +25,13 @@ CREATE TABLE `bamazon_db`.`Products` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `product_name` VARCHAR(50) NOT NULL,
   `price` DECIMAL(6,2) NOT NULL,
-  `id_departments` INT NOT NULL,
+  `name_departments` VARCHAR(50) NOT NULL,
   `inventory` INT NOT NULL,
   PRIMARY KEY (`id`),
-  INDEX `fk_Products_Departments_idx` (`id_departments` ASC),
+  INDEX `fk_Products_Departments_idx` (`name_departments` ASC),
   CONSTRAINT `fk_Products_Departments`
-    FOREIGN KEY (`id_departments`)
-    REFERENCES `bamazon_db`.`Departments` (`id`)
+    FOREIGN KEY (`name_departments`)
+    REFERENCES `bamazon_db`.`Departments` (`department_name`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
