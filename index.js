@@ -10,19 +10,32 @@ var connection = mysql.createConnection({
     database: "bamazon_db"
 });
 
+var commands = {
+    "customer" : function(connection){
+        bamazonCustomer(connection)
+    },
+    "manager" : function(connection){
+        bamazonManager(connection)
+    },
+}
+
+function printCommands(){
+    console.log("\nAvailable Commands Are:");
+    for(key in commands){
+        console.log(key);
+    }
+}
+
 connection.connect(function(err) {
     if(err) throw err;
     if(process.argv.length === 3){
-        switch (process.argv[2]){
-            case "customer" :
-                bamazonCustomer(connection);
-                break;
-            case "manager" : 
-                bamazonManager(connection);
-                break;
-            default :
-                console.log("command not recognized");
-                connection.end();
+        var command = process.argv[2];
+        if(commands.hasOwnProperty(command)){
+            commands[command](connection);
+        } else {
+            console.log("\nCommand \"" + command + "\" is not recognized");
+            connection.end();
+            printCommands();
         }
     } else {
         console.log("Invalid command-line args");
