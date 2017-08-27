@@ -2,13 +2,12 @@
   "name": "bamazon_customer",
   "version": "1.0.0",
   "description": "customer app for bamazon",
-  "main": "bamazonCustomer.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "Bamazon",
-    "Customer",
     "MySQL"
   ],
   "author": "John Price",

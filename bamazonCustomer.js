@@ -1,10 +1,10 @@
 var inquirer = require("inquirer");
 var password_hash = require("password-hash");
-var connection = require("./mySQLConnection.js");
 var printResults = require("./helpers/printer.js");
 var createOrderAndAddressTransaction = require("./helpers/queriesAndTransactions.js").createOrderAndAddressTransaction;
 var placeMyOrderTransaction = require("./helpers/queriesAndTransactions.js").placeMyOrderTransaction;
 var signUpTransaction = require("./helpers/queriesAndTransactions.js").signUpTransaction;
+var connection;
 
 var passwordLength = 4;
 var currentCustomer = {};
@@ -299,11 +299,7 @@ function signUp(){
                     state : inqAddrRes.myState,
                     zip : inqAddrRes.myZip,
                 }
-                currentCustomer = signUpTransaction(connection, customerObj, addressObj);
-                console.log(currentCustomer);
-                if(currentCustomer){
-                    mainMenu();
-                }
+                signUpTransaction(connection, customerObj, addressObj);
             }).catch(function(inqAddrErr){
                 connection.end();
                 throw inqAddrErr;
@@ -350,12 +346,10 @@ function startPrompt(){
     });
 }
 
-connection.connect(function(err){
-    if(err){
-        throw err;
-    }
+var bamazonCustomer = function(myConn){
+    connection = myConn;
     startPrompt();
-});
+}
 
 exports.setCurrentCustomer = setCurrentCustomer;
 exports.mainMenu = {
@@ -368,3 +362,4 @@ exports.displayAvailableProducts = {
         displayAvailableProducts();
     }
 }
+exports.bamazonCustomer = bamazonCustomer;

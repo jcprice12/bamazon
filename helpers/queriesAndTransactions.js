@@ -1,5 +1,6 @@
 var printResults = require("./printer.js");
 var custApp = require("./../bamazonCustomer.js");
+var managerApp = require("./../bamazonManager.js");
 
 var placeOrder = function(connection, productId, quantity, addressId, currentCustomer){
     connection.query("SELECT * FROM `Products` WHERE `id` = ?", productId, function(errInv, invResp){
