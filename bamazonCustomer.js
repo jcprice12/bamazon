@@ -5,10 +5,7 @@ var connection = require("./mySQLConnection.js");
 var passwordLength = 4;
 var cellDivider = " | ";
 var startCellDivider = "| ";
-var currentCustomer = {
-    email : "test@test.com",
-    id_addresses : 25
-}
+var currentCustomer = {};
 
 function getMaxWidthEachColumn(data){
     var lengths = [];
@@ -80,79 +77,185 @@ function validatePassword(input){
     return false;
 }
 
-function placeOrder(productId, quantity){
-    connection.beginTransaction(function(errTrans){
-        if(errTrans) { throw errTrans; }
-        connection.query("SELECT * FROM `Products` WHERE `id` = ?", productId, function(errInv, invResp){
-            if(invResp[0].inventory >= quantity){
+var placeOrder = function(productId, quantity, addressId){
+    connection.query("SELECT * FROM `Products` WHERE `id` = ?", productId, function(errInv, invResp){
+        if(invResp[0].inventory >= quantity){
+            connection.query({
+                sql : "UPDATE `Products` SET `inventory` = (`inventory` - ?) WHERE `id` = ?",
+                timeout : 40000,
+                values : [quantity,productId],
+            }, function(updateErr, updateResults){
+                if(updateErr){
+                    return connection.rollback(function(){
+                        throw updateErr;
+                    });
+                }
+                var myTotal = invResp[0].price * quantity;
+                var myDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                var order = {
+                    id_products : productId,
+                    "quantity" : quantity,
+                    sub_total : myTotal,
+                    email_customers : currentCustomer.email,
+                    id_addresses : addressId,
+                    date_of_order : myDate,
+                }
                 connection.query({
-                    sql : "UPDATE `Products` SET `inventory` = (`inventory` - 1) WHERE `id` = ?",
+                    sql : "INSERT INTO `Orders` SET ?",
                     timeout : 40000,
-                    values : [productId],
-                }, function(updateErr, updateResults){
-                    if(updateErr){
+                    values : [order],
+                }, function(errInsert, insertResults){
+                    if(errInsert){
                         return connection.rollback(function(){
-                            throw updateErr;
+                            throw errInsert;
                         });
                     }
-                    var myTotal = invResp[0].price * quantity;
-                    var myDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
-                    var order = {
-                        id_products : productId,
-                        "quantity" : quantity,
-                        sub_total : myTotal,
-                        email_customers : currentCustomer.email,
-                        id_addresses : currentCustomer.id_addresses,
-                        date_of_order : myDate,
-                    }
-                    connection.query({
-                        sql : "INSERT INTO `Orders` SET ?",
-                        timeout : 40000,
-                        values : [order],
-                    }, function(errInsert, insertResults){
-                        if(errInsert){
-                            return connection.rollback(function(){
-                                throw errInsert;
+                    connection.commit(function(commitErr){
+                        if(commitErr){
+                            connection.rollback(function(){
+                                throw commitErr;
                             });
                         }
-                        connection.commit(function(commitErr){
-                            if(commitErr){
-                                connection.rollback(function(){
-                                    throw commitErr;
-                                });
-                            }
+                        console.log("\nThank you for shopping with Bamazon!");
+                        console.log("Your order is:\n");
+                        connection.query("SELECT `id` AS `Order ID`, `id_products` AS `Product ID`, `quantity` AS `Quantity`, `sub_total` AS `Total`, `date_of_order` AS `Date` FROM `Orders` WHERE `date_of_order` = (SELECT max(date_of_order) FROM `Orders` WHERE `email_customers` = ? GROUP BY `email_customers`)", currentCustomer.email, function(selOrderErr, selOrderResp){
+                            if(selOrderErr) throw selOrderErr;
+                            printResults(selOrderResp);
                             mainMenu();
-                        });
+                        })
                     });
                 });
-            } else {
-                console.log("Cannot place order, only " + invResp[0].inventory + " units of that product remain");
-                connection.rollback(function(){});
-                displayAvailableProducts();
+            });
+        } else {
+            console.log("Cannot place order, only " + invResp[0].inventory + " units of that product remain");
+            connection.rollback(function(){});
+            displayAvailableProducts();
+        }
+    });
+}
+
+function inquirerCreateAddress(){
+    var promise = inquirer.prompt([
+        {
+            type : "input",
+            message : "Street Address:",
+            validate : function(input){
+                if(input.trim() !==  ""){
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+            name : "addressLine",
+        }, 
+        {
+            type : "input",
+            message : "City:",
+            validate : function(input){
+                if(input.trim() !==  ""){
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+            name : "myCity",
+        },
+        {
+            type : "list",
+            message : "State:",
+            choices : ['AK', 'AL', 'AR', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'GA', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MI', 'MN', 'MO', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VA', 'VT', 'WA', 'WI', 'WV', 'WY'],
+            name : "myState",
+        },
+        {
+            type : "input",
+            message : "5-Digit Zip Code:",
+            validate : function(input){
+                if(input.trim().length === 5 && !isNaN(input)){
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+            name : "myZip",
+        }
+    ]);
+
+    return promise;
+}
+
+function createOrderAddress(productId, quantity, callback){
+    var inqPromise = inquirerCreateAddress();
+    inqPromise.then(function(inqRes){
+        connection.beginTransaction(function(errTrans){
+            if(errTrans) { throw errTrans; }
+            var addressObj = {
+                address : inqRes.addressLine,
+                city : inqRes.myCity,
+                state : inqRes.myState,
+                zip : inqRes.myZip,
             }
+            connection.query({
+                sql : "SELECT * FROM `Addresses` WHERE `address` = ? AND `city` = ? AND `state` = ? AND `zip` = ?",
+                timeout : 40000,
+                values : [addressObj.address, addressObj.city, addressObj.state, addressObj.zip],
+            }, function(selectAddrErr, addrResp){
+                if(selectAddrErr){
+                    return connection.rollback(function(){
+                        throw selectAddrErr;
+                    })
+                }
+                if(addrResp.length > 0){
+                    placeOrder(productId, quantity, addrResp[0].id);
+                } else {
+                    connection.query("INSERT INTO `Addresses` SET ?", addressObj, function(insertAddrErr, insertAddrResp){
+                        if(insertAddrErr){
+                            return connection.rollback(function(){
+                                throw insertAddrErr;
+                            });
+                        }
+                        connection.query({
+                            sql : "SELECT id FROM `Addresses` WHERE `address` = ? AND `city` = ? AND `state` = ? AND `zip` = ?",
+                            timeout : 40000,
+                            values : [addressObj.address, addressObj.city, addressObj.state, addressObj.zip],
+                        }, function(addrSelectErr, addrSelectResp){
+                            if(addrSelectErr){
+                                return connection.rollback(function(){
+                                    throw addrSelectErr;
+                                });
+                            }
+                            placeOrder(productId, quantity, addrSelectResp[0].id);
+                        });
+                    });
+                }
+            });
         });
     });
 }
 
-// function determineAddress(productId, quantity){
-//     var address = currentCustomer.address
-//     inquirer.prompt([
-//         {
-//             type : "confirm",
-//             message : "Use ",
-//             validate : function(input){
-//                 if( !isNaN(input) && ((input * 1) > 0)){
-//                     return true;
-//                 }   
-//                 return false;
-//             },
-//             default : 1,
-//             name : "amount",
-//         }
-//     ]).then(function(inqResp){
-    
-//     });
-// }
+function determineAddress(productId, quantity){
+    var addressId = currentCustomer.id_addresses;
+    connection.query("SELECT * FROM `Addresses` WHERE id = ?", addressId, function(addrErr, addrResp){
+        if(addrErr) throw addrErr;
+        var addr = addrResp[0];
+        inquirer.prompt([
+            {
+                type : "confirm",
+                message : "Use default billing and shipping address? (" + addr.address + " " + addr.city + " " + addr.state + " " + addr.zip + ")",
+                default : true,
+                name : "confirm",
+            }
+        ]).then(function(inqResp){
+                if(inqResp.confirm){
+                    connection.beginTransaction(function(errTrans){
+                        if(errTrans) { throw errTrans; }
+                        placeOrder(productId, quantity, addressId);
+                    });
+                } else {
+                    createOrderAddress(productId, quantity);
+                }
+        });
+    });
+}
 
 function selectQuantity(productId){
     inquirer.prompt([
@@ -169,7 +272,7 @@ function selectQuantity(productId){
             name : "amount",
         }
     ]).then(function(inqResp){
-        placeOrder(productId, inqResp.amount);
+        determineAddress(productId, inqResp.amount);
     }).catch(function(err){
         connection.end();
         throw err;
@@ -272,10 +375,11 @@ function logIn(){
         }
     ]).then(function(inqResp){
         if(validatePassword(inqResp.password)){
-            connection.query("SELECT `hash` FROM `Customers` WHERE email = ?", inqResp.email, function(err, queryResponse){
+            connection.query("SELECT * FROM `Customers` WHERE email = ?", inqResp.email, function(err, queryResponse){
                 if(err) throw err;
                 if(queryResponse.length > 0){
                     if(password_hash.verify(inqResp.password,queryResponse[0].hash)){
+                        currentCustomer = queryResponse[0];
                         mainMenu();
                     } else {
                         console.log("\nIncorrect Email/Password combination.");
@@ -413,6 +517,7 @@ function signUp(){
                                         throw commitErr;
                                     });
                                 }
+                                currentCustomer = customerObj;
                                 mainMenu();
                             });
                         });
@@ -446,6 +551,7 @@ function signUp(){
                                                 throw commitErr;
                                             });
                                         }
+                                        currentCustomer = customerObj;
                                         mainMenu();
                                     });
                                 });
