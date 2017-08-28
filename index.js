@@ -1,6 +1,7 @@
 var mysql = require("mysql");
 var bamazonCustomer = require("./bamazonCustomer.js").bamazonCustomer;
 var bamazonManager = require("./bamazonManager.js").bamazonManager;
+var bamazonSupervisor = require("./bamazonSupervisor.js").bamazonSupervisor;
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -12,11 +13,14 @@ var connection = mysql.createConnection({
 
 var commands = {
     "customer" : function(connection){
-        bamazonCustomer(connection)
+        bamazonCustomer(connection);
     },
     "manager" : function(connection){
-        bamazonManager(connection)
+        bamazonManager(connection);
     },
+    "supervisor" : function(connection){
+        bamazonSupervisor(connection);
+    }
 }
 
 function printCommands(){

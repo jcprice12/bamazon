@@ -1,6 +1,7 @@
 var printResults = require("./printer.js");
 var custApp = require("./../bamazonCustomer.js");
 var managerApp = require("./../bamazonManager.js");
+var supervisorApp = require("./../bamazonSupervisor.js");
 
 var placeOrder = function(connection, productId, quantity, addressId, currentCustomer){
     connection.query("SELECT * FROM `Products` WHERE `id` = ?", productId, function(errInv, invResp){
@@ -243,6 +244,46 @@ var insertProd = function(connection, product){
     });
 }
 
+var insertDept = function(connection, dept){
+    connection.beginTransaction(function(errTrans){
+        if(errTrans){
+            return connection.rollback(function(){
+                throw errTrans;
+            });
+        }
+        connection.query("SELECT department_name FROM `Departments` WHERE department_name = ?", dept.department_name, function(errSel, selRes){
+            if(errSel){
+                return connection.rollback(function(){
+                    throw errSel;
+                });
+            }
+            if(selRes.length > 0){
+                console.log("A department already exists with that name.");
+                connection.rollback(function(){});
+                supervisorApp.createDept();
+            } else {
+                connection.query("INSERT INTO `Departments` SET ?", dept, function(errInsert, insertRes){
+                    if(errInsert){
+                        return connection.rollback(function(){
+                            throw errInsert;
+                        });
+                    }
+                    connection.commit(function(commitErr){
+                        if(commitErr){
+                            return connection.rollback(function(){
+                                throw commitErr;
+                            });
+                        }
+                        console.log("Department successfully added!");
+                        supervisorApp.startPrompt();
+                    });
+                });
+            }
+        });
+    });
+}
+
+exports.insertDept = insertDept;
 exports.insertProd = insertProd;
 exports.addStock = addStock;
 exports.signUpTransaction = signUpTransaction;
