@@ -1,8 +1,10 @@
+//dependencies
 var mysql = require("mysql");
-var bamazonCustomer = require("./bamazonCustomer.js").bamazonCustomer;
-var bamazonManager = require("./bamazonManager.js").bamazonManager;
-var bamazonSupervisor = require("./bamazonSupervisor.js").bamazonSupervisor;
+var bamazonCustomer = require("./bamazonCust/bamazonCustomer.js").bamazonCustomer;
+var bamazonManager = require("./bamazonMan/bamazonManager.js").bamazonManager;
+var bamazonSupervisor = require("./bamazonSuper/bamazonSupervisor.js").bamazonSupervisor;
 
+//connection parameters established with mysql
 var connection = mysql.createConnection({
     host: "localhost",
     port: 3306,
@@ -11,6 +13,7 @@ var connection = mysql.createConnection({
     database: "bamazon_db"
 });
 
+//available commands
 var commands = {
     "customer" : function(connection){
         bamazonCustomer(connection);
@@ -23,6 +26,7 @@ var commands = {
     }
 }
 
+//print commands if user entered an unknown command
 function printCommands(){
     console.log("\nAvailable Commands Are:");
     for(key in commands){
@@ -30,6 +34,7 @@ function printCommands(){
     }
 }
 
+//start up connection. starts app based on command-line arg given. see available commands in the commands obj
 connection.connect(function(err) {
     if(err) throw err;
     if(process.argv.length === 3){

@@ -1,18 +1,22 @@
+//dependencies
 var inquirer = require("inquirer");
 var password_hash = require("password-hash");
-var printResults = require("./helpers/printer.js");
-var createOrderAndAddressTransaction = require("./helpers/queriesAndTransactions.js").createOrderAndAddressTransaction;
-var placeMyOrderTransaction = require("./helpers/queriesAndTransactions.js").placeMyOrderTransaction;
-var signUpTransaction = require("./helpers/queriesAndTransactions.js").signUpTransaction;
-var connection;
+var printResults = require("./../helpers/printer.js");
+var custQueryHelper = require("./localHelpers/custQueryHelper.js")
 
+//connection object (passed in from index.js)
+var connection;
+//set password length to be at least 4
 var passwordLength = 4;
+//customer object used to keep track of who's logged in
 var currentCustomer = {};
 
+//used by the query helper to set my current customer upon sign-in
 var setCurrentCustomer = function(currentCust){
     currentCustomer = currentCust;
 }
 
+//check if password greater than 4 (might add more validation in future)
 function validatePassword(input){
     if(input.length >= passwordLength){
         return true;
@@ -21,6 +25,8 @@ function validatePassword(input){
     return false;
 }
 
+//inqurier asks questions about an address
+//this function returns a promise (whatever calls this function must resolve it)
 function inquirerCreateAddress(){
     var promise = inquirer.prompt([
         {
@@ -70,6 +76,7 @@ function inquirerCreateAddress(){
     return promise;
 }
 
+//creates address object (resolves address promise) and passes in other order info to query helper
 function createOrderAddress(productId, quantity){
     var inqPromise = inquirerCreateAddress();
     inqPromise.then(function(inqRes){
@@ -79,10 +86,11 @@ function createOrderAddress(productId, quantity){
             state : inqRes.myState,
             zip : inqRes.myZip,
         }
-        createOrderAndAddressTransaction(connection,productId, quantity, addressObj, currentCustomer);
+        custQueryHelper.createOrderAndAddressTransaction(connection,productId, quantity, addressObj, currentCustomer);
     });
 }
 
+//ask user to use default address (associated directly with customer record in DB) or to input a different shipping/billing address
 function determineAddress(productId, quantity){
     var addressId = currentCustomer.id_addresses;
     connection.query("SELECT * FROM `Addresses` WHERE id = ?", addressId, function(addrErr, addrResp){
@@ -97,14 +105,17 @@ function determineAddress(productId, quantity){
             }
         ]).then(function(inqResp){
                 if(inqResp.confirm){
-                    placeMyOrderTransaction(connection, productId, quantity, addressId, currentCustomer);
+                    //query helper handles order
+                    custQueryHelper.placeMyOrderTransaction(connection, productId, quantity, addressId, currentCustomer);
                 } else {
+                    //will use query helper eventually
                     createOrderAddress(productId, quantity);
                 }
         });
     });
 }
 
+//ask user how much of product he/she wants to buy
 function selectQuantity(productId){
     inquirer.prompt([
         {
@@ -127,6 +138,7 @@ function selectQuantity(productId){
     });
 }
 
+//asks user which product he/she wants to buy
 function selectProduct(){
     inquirer.prompt([
         {
@@ -153,6 +165,7 @@ function selectProduct(){
     });
 }
 
+//simple select query. is handled in this file. Print helper prints results to console.
 function displayAvailableProducts(){
     connection.query({
         sql : "SELECT * FROM `Products` WHERE `inventory` > 0",
@@ -172,6 +185,7 @@ function displayAvailableProducts(){
     });
 }
 
+//main menu function
 var mainMenu = function(){
     console.log("\n");
     var myChoices = [
@@ -206,6 +220,8 @@ var mainMenu = function(){
     });
 }
 
+//login function. Passwords are validated against the has returned by the DB according to the entered email address.
+//direct user to main menu on successful login
 function logIn(){
     inquirer.prompt([
         {
@@ -247,6 +263,7 @@ function logIn(){
     });
 }
 
+//ask user certain information to sign up. Only registered users can use Bamazon
 function signUp(){
     inquirer.prompt([
         {
@@ -281,6 +298,7 @@ function signUp(){
         }
     ]).then(function(inqRes){
         if(validatePassword(inqRes.password)){
+            //passwords are not stored in the DB as plain text. They are hashed and given a random salt. One way encryption algorithm (SHA2) is used to hash the pass
             var passHash = password_hash.generate(inqRes.password, {
                 algorithm : 'sha256',
                 saltLength : 16,
@@ -299,7 +317,7 @@ function signUp(){
                     state : inqAddrRes.myState,
                     zip : inqAddrRes.myZip,
                 }
-                signUpTransaction(connection, customerObj, addressObj);
+                custQueryHelper.signUpTransaction(connection, customerObj, addressObj);
             }).catch(function(inqAddrErr){
                 connection.end();
                 throw inqAddrErr;
@@ -313,6 +331,7 @@ function signUp(){
     });
 }
 
+//start screen (prompt user to exit, login or sign up)
 function startPrompt(){
     var myChoices = [
         "Log In",
@@ -346,11 +365,13 @@ function startPrompt(){
     });
 }
 
+//entry point of app. called by index.js
 var bamazonCustomer = function(myConn){
     connection = myConn;
     startPrompt();
 }
 
+//export some of my functions
 exports.setCurrentCustomer = setCurrentCustomer;
 exports.mainMenu = {
     execute : function(){

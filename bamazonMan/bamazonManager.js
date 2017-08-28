@@ -1,8 +1,12 @@
+//dependencies
 var inquirer = require("inquirer");
-var printResults = require("./helpers/printer.js");
-var queryHelper = require("./helpers/queriesAndTransactions.js");
+var printResults = require("./../helpers/printer.js");
+var manQueryHelper = require("./localHelpers/manQueryHelper.js");
+
+//connection object (passed in from index.js)
 var connection;
 
+//simple select query. query handled in this file
 var viewAllProductsManager = function(){
     connection.query("SELECT * FROM `Products`", function(err, resp){
         if(err) throw err;
@@ -11,6 +15,7 @@ var viewAllProductsManager = function(){
     });
 }
 
+//simple select query. query handled in this file
 var viewLowInv = function(){
     connection.query("SELECT * FROM `Products` WHERE `inventory` < 5", function(err, resp){
         if(err) throw err;
@@ -19,6 +24,7 @@ var viewLowInv = function(){
     });
 }
 
+//inqurier asks what you want to add inventory to, and how much
 var addInv = function(){
     inquirer.prompt([
         {
@@ -44,10 +50,12 @@ var addInv = function(){
             name : "amount",
         }
     ]).then(function(inqResp){
-        queryHelper.addStock(connection, inqResp.prodId, inqResp.amount);
+        //query helper does the update
+        manQueryHelper.addStock(connection, inqResp.prodId, inqResp.amount);
     });
 }
 
+//inquirer asks user some info about new product
 var addNewProduct = function(){
     connection.query("SELECT `department_name` FROM `Departments`", function(selErr, selRes){
         if(selErr) throw err;
@@ -84,13 +92,15 @@ var addNewProduct = function(){
                 },
             ]).then(function(inqResp){
                 var myPrice = parseFloat(Math.round(inqResp.prodPrice * 100) / 100).toFixed(2);
+                //create object to insert (note that inventory automatically set to 0)
                 var prodToInsert = {
                     product_name : inqResp.prodName,
                     price : myPrice,
                     name_departments : inqResp.deptName,
                     inventory : 0,
                 }
-                queryHelper.insertProd(connection,prodToInsert);
+                //query helper takes care of the insert
+                manQueryHelper.insertProd(connection,prodToInsert);
             });
         } else {
             console.log("Cannot add a new product because there are no departments in the Database.");
@@ -98,6 +108,7 @@ var addNewProduct = function(){
     });
 }
 
+//main menu
 var startManagerPrompt = function(){
     myChoices = [
         "View Products for Sale",
@@ -136,16 +147,20 @@ var startManagerPrompt = function(){
     });
 }
 
+//merely used to separate welcome to bamazon prompt from main menu on startup
 function welcomeScreen(){
     console.log("\nWelcome to Bamazon Manager!\n");
     startManagerPrompt();
 }
 
+//called by index.js
 var bamazonManager = function(myConn){
     connection = myConn;
     welcomeScreen();
 }
 
+
+//export my functions
 exports.startManagerPrompt = startManagerPrompt;
 exports.addInv = addInv;
 exports.bamazonManager = bamazonManager;
