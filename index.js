@@ -48,6 +48,7 @@ connection.connect(function(err) {
         }
     } else {
         console.log("Invalid command-line args");
+        printCommands();
         connection.end();
     }
 });
