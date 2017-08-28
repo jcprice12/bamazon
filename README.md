@@ -17,10 +17,15 @@ There are three applications:
 3. Bamazon Supervisor
 
 To start them up, follow this format: "node index.js 'appName'"
+
 E.G.
-![Start Customer App](/images/startCustomerApp.jpg)
-![Start Manager App](/images/startManApp.jpg)
-![Start Supervisor App](/images/startSuperApp.jpg)
+
+![Start Customer App](https://github.com/jcprice12/bamazon/blob/master/images/startCustomerApp.JPG?raw=true)
+
+![Start Manager App](https://github.com/jcprice12/bamazon/blob/master/images/startManApp.JPG?raw=true)
+
+![Start Supervisor App](https://github.com/jcprice12/bamazon/blob/master/images/startSuperApp.JPG?raw=true)
+
 
 Follow the in-app prompts to use the applications
 
